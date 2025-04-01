@@ -13,7 +13,8 @@ license = {text = "MIT"}
 readme = "README.md"
 requires-python = ">=3.6"
 dependencies = [
-    "requests"
+    "requests",
+    "pandas"
 ]
 
 [project.urls]
