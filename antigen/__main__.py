@@ -3,8 +3,6 @@ import requests
 import csv
 from sentence import Sentence
 
-
-
 def help():
     return '''
 Usage: anti [[flag] [value]]...
@@ -13,7 +11,7 @@ Usage: anti [[flag] [value]]...
         -t - Translation sentence language (to)
         -s - Tatoeba sorting algorithm'''
 
-def paging_request(req_url: str | None, to, limit):
+def get_sentences(req_url: str | None, to, limit):
     next_req = req_url
     count = 0
     sentence_objs = []
@@ -58,7 +56,7 @@ def main():
             exit(1)
 
     REQ_URL = "https://api.tatoeba.org/unstable/sentences?lang={}&trans:lang={}&sort={}&limit={}"
-    sentences = paging_request(REQ_URL.format(arg_from, arg_to, arg_sort, arg_limit), arg_to, int(arg_limit))
+    sentences = get_sentences(REQ_URL.format(arg_from, arg_to, arg_sort, arg_limit), arg_to, int(arg_limit))
 
     fields = ["Text", "Audio", "Translation"]
     writer = csv.writer(sys.stdout)
