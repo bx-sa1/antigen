@@ -2,6 +2,7 @@
 import sys
 import requests
 import csv
+import json
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
@@ -13,11 +14,13 @@ def help():
     return '''
 Usage: anti [[flag] [value]]...
     Flags:
-        -f - Original sentence language (from)
-        -t - Translation sentence language (to)
-        -s - Tatoeba sorting algorithm
-        -l - Sentence limit
-        -ts - Transcription Script (ISO-15924)'''
+        -f - Original sentence language [https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes]
+        -t - Translation sentence language (Default: eng) [https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes]
+        -s - Tatoeba sorting algorithm (Default: words) [-?(relevance|words|created|modified|random)]
+        -l - Sentence limit (Default: 500)
+        -ts - Transcription Script [https://en.wikipedia.org/wiki/ISO_15924]
+        -j - Only print the json response of the first page (usually used for testing)
+        -wc - Word Count'''
 
 class Sentence:
     def __init__(self, json_sentence: dict, trans_lang: str, script: str | None):
@@ -77,6 +80,8 @@ def main():
     arg_sort = "words"
     arg_limit = "500"
     arg_transcript_script = None
+    arg_json = False
+    arg_wordcount = None
 
     args = sys.argv[1:]
     if len(args) == 0:
@@ -95,6 +100,10 @@ def main():
                 arg_limit = next(args)
             elif a == "-ts":
                 arg_transcript_script = next(args)
+            elif a == "-j":
+                arg_json = True
+            elif a == "-wc":
+                arg_wordcount = next(args)
             elif a == "-h":
                 print(help())
                 return 1
@@ -102,7 +111,11 @@ def main():
                 print("Unknown argument ", a)
                 return 1
 
-    REQ_URL = "https://api.tatoeba.org/unstable/sentences?lang={}&trans:lang={}&sort={}&limit={}".format(arg_from, arg_to, arg_sort, arg_limit)
+    REQ_URL = "https://api.tatoeba.org/unstable/sentences?lang={}&trans:lang={}&sort={}&limit={}{}".format(arg_from, arg_to, arg_sort, arg_limit, "&word_count={}".format(arg_wordcount) if arg_wordcount is not None else "")
+    if arg_json == True:
+        print(json.dumps(requests.get(REQ_URL).json()))
+        return 0
+
     res = fetch(REQ_URL, arg_to, arg_transcript_script)
     if res == None:
         eprint("Failed to fetch first page: ", REQ_URL)
@@ -116,6 +129,8 @@ def main():
             return 1
         (new_sentences, next_page) = res
         sentences.extend(new_sentences)
+
+    sentences = sentences[:int(arg_limit)]
 
     fields = ["Text", "Audio", "Translation", "Transcription"]
     writer = csv.writer(sys.stdout)
